@@ -1,7 +1,9 @@
-I want to build an nextjs app for video calling with my wife.
+I want to build an nextjs app with app router for video calling with my wife.
 
 I have initiated the project with shedcn/ui and I am using nextjs 15
 get me started 
 
 1. main purpose of the app is to do a video call. 
-2. call should work in poorest network connection and if something goes wrong
+2. call should work in poorest network connection and if something goes wrong it should just reconnect
+3. In start user should be prompted to use a secret code which will come from environment variable which will indicate if the user is me or my wife.
+4. At a time only one instace of me or my wife should exist if another instance comes just terminate previous one and use latest one.
