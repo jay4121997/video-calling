@@ -21,8 +21,12 @@ export default function VideoCall() {
           await localVideoRef.current.play();
         }
 
+        // Determine WebSocket protocol
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const socketUrl = `${protocol}://${window.location.host}/api/signaling`;
+
         // Connect to WebSocket signaling server
-        socket.current = new WebSocket(`ws://${window.location.host}/api/signaling`);
+        socket.current = new WebSocket(socketUrl);
 
         // Handle signaling messages
         socket.current.onmessage = (event) => {
