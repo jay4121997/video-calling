@@ -1,9 +1,19 @@
 import { WebSocketServer } from 'ws';
 import { NextRequest } from 'next/server';
+import type { Server } from 'http';
 
 let wss: WebSocketServer | null = null;
 
-export async function GET(req: NextRequest) {
+// Type to extend the Next.js request to include the raw HTTP socket
+type UpgradeableRequest = NextRequest & {
+  raw: {
+    socket: {
+      server: Server;
+    };
+  };
+};
+
+export async function GET(req: UpgradeableRequest) {
   if (!wss) {
     wss = new WebSocketServer({ noServer: true });
 
@@ -26,12 +36,14 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  // Ensure the request is an upgrade request for WebSocket
   const upgradeHeader = req.headers.get('upgrade');
   if (upgradeHeader !== 'websocket') {
     return new Response('Expected WebSocket', { status: 426 });
   }
 
-  const { socket } = (req as any).raw;
+  // Handle the WebSocket upgrade
+  const { socket } = req.raw;
   wss.handleUpgrade(socket, req.raw, Buffer.alloc(0), (ws) => {
     wss?.emit('connection', ws);
   });
