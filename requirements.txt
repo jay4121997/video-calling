@@ -1,0 +1,7 @@
+I want to build an nextjs app for video calling with my wife.
+
+I have initiated the project with shedcn/ui and I am using nextjs 15
+get me started 
+
+1. main purpose of the app is to do a video call. 
+2. call should work in poorest network connection and if something goes wrong
