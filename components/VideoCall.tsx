@@ -7,26 +7,54 @@ export default function VideoCall() {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState('');
+  const socket = useRef<WebSocket | null>(null);
+  const peer = useRef<Peer.Instance | null>(null);
 
   useEffect(() => {
     async function setupMedia() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 
-        // Play local stream in local video element
+        // Display local video feed
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
           await localVideoRef.current.play();
         }
 
-        // Peer-to-peer communication setup
-        const peer = new Peer({ initiator: true, trickle: false, stream });
+        // Connect to WebSocket signaling server
+        socket.current = new WebSocket(`ws://${window.location.host}/api/signaling`);
 
-        peer.on('signal', (data) => {
-          console.log('SIGNAL:', data);
+        // Handle signaling messages
+        socket.current.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+
+          if (data.type === 'offer') {
+            peer.current = new Peer({ initiator: false, trickle: false, stream });
+            peer.current.signal(data.signal);
+
+            peer.current.on('signal', (signal) => {
+              socket.current?.send(JSON.stringify({ type: 'answer', signal }));
+            });
+
+            peer.current.on('stream', (remoteStream) => {
+              if (remoteVideoRef.current) {
+                remoteVideoRef.current.srcObject = remoteStream;
+                remoteVideoRef.current.play();
+              }
+            });
+          } else if (data.type === 'answer') {
+            peer.current?.signal(data.signal);
+          }
+        };
+
+        // Create a new peer connection
+        peer.current = new Peer({ initiator: true, trickle: false, stream });
+
+        peer.current.on('signal', (signal) => {
+          socket.current?.send(JSON.stringify({ type: 'offer', signal }));
         });
 
-        peer.on('stream', (remoteStream) => {
+        peer.current.on('stream', (remoteStream) => {
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = remoteStream;
             remoteVideoRef.current.play();
@@ -39,6 +67,11 @@ export default function VideoCall() {
     }
 
     setupMedia();
+
+    return () => {
+      socket.current?.close();
+      peer.current?.destroy();
+    };
   }, []);
 
   return (
